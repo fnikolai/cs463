@@ -1,73 +1,34 @@
 package cs463;
 
+//import org.apache.commons.io.FilenameUtils;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 import mitos.stemmer.Stemmer;
 
 public class Scavenger {
 
 	/*
-	 * Quick and dirty hack for increased performance instead of using normal
-	 * HASH
-	 */
-	private static class Word {
-		int value = 1; // note that we start at 1 since we're counting
-		private boolean blacklisted;
-		private List<String> documentList = new ArrayList();
-		String rootWord;
-
-		public void setRootWord(String rootWord){
-			this.rootWord = rootWord;
-		}		
-		
-		public String getRootWord(){
-			return this.rootWord;
-		}		
-		
-		public void addDocumentReference(String docName){
-			documentList.add(docName);
-		}
-
-		public int getDocumentList_size(){
-			return documentList.size();
-		}		
-
-		public List<String>  getDocumentList(){
-			return documentList;
-		}		
-		
-		public void incrAppearances() {
-			++value;
-		}
-
-		public int getAppearances() {
-			return value;
-		}
-
-		public boolean isBlacklisted() {
-			return blacklisted;
-		}
-
-		public void setBlacklisted(boolean blacklisted) {
-			this.blacklisted = blacklisted;
-		}
-	}
-
-	/*
-	 * Same hashmap is used both for words and blacklist. Is it is blacklisted,
+	 * Same TreeMap is used both for words and blacklist. Is it is blacklisted,
 	 * proper flag is set When we are going to print the results, we must check
 	 * if the word is blacklisted and return if it is not
+	 * 
+	 * First approach was to use HashMap, but Treemap is better because it also implements sorting
 	 */
+ 
+	static TreeMap<String, Word> index = new TreeMap<String, Word>();
+	static TreeMap<String, Integer> docIDmap= new TreeMap<String, Integer>();;
 
-	static HashMap<String, Word> index = new HashMap<String, Word>();
 	private static Scanner tokenize;
 
 	/*
@@ -76,17 +37,28 @@ public class Scavenger {
 	 * *******************************************
 	 */
 
-	public static void indexWord(String wordString, boolean isBlackList, File fileInfo) {
+	public static void indexWord(String wordString, int pos,  boolean isBlackList, File fileInfo) {
 		Word word = index.get(wordString);
+		
 		if (word == null) {
-			index.put(wordString, new Word());
-			index.get(wordString).setBlacklisted(isBlackList);
+			word = new Word();
+			
+			word.setBlacklisted(isBlackList);	// Obviously isBlackList is set from the outer world
+			if ( !isBlackList )
+				word.addDocumentRefID( fileInfo.getAbsolutePath(), pos, docIDmap);
+				//word.addDocumentReference(fileInfo.getAbsolutePath(), pos );
+			
+			index.put(wordString, word);
 		} else {
 			word.incrAppearances();
-			index.get(wordString).documentList.add(fileInfo.getName());
+			
+			if ( !isBlackList ) 
+				word.addDocumentRefID( fileInfo.getAbsolutePath(), pos, docIDmap);
+				//word.addDocumentReference(fileInfo.getAbsolutePath(), pos);
 		}
 	}
 
+	
 	public static void printIndex() {
 		for (String wordString : index.keySet()) {
 			if (index.get(wordString).isBlacklisted() == true) {
@@ -94,10 +66,10 @@ public class Scavenger {
 				continue;
 			}
 			Word word = index.get(wordString);
-			System.out.println(wordString + " -> " + word.getAppearances() + "->"  + word.getRootWord() + " -> " + word.getDocumentList_size());
+			System.out.println(wordString + " -> " + word.isBlacklisted() +  " -> " + word.getAppearances() + " -> "  + word.getRootWord() + " -> " + word.getDocumentListID());
 		}
 	}
-
+	
 	/* Wrapper for indexFile, especially for loading Blacklists */
 	public static void loadBlackListFilesOfDir(File fileInfo) {
 		indexFilesOfDir(fileInfo, true); // true for BlackList
@@ -128,7 +100,8 @@ public class Scavenger {
 			while ((text = reader.readLine()) != null) {
 				tokenize = new Scanner(text);
 				while (tokenize.hasNext()) {
-					indexWord(tokenize.next(), isBlackList, fileInfo);
+					/* FIXME : fix the way to get the position */
+					indexWord(tokenize.next(), 32, isBlackList, fileInfo);
 				}
 			}
 		} catch (FileNotFoundException e) {
@@ -161,9 +134,136 @@ public class Scavenger {
 				continue;
 			}
 			
-			//System.out.print("Word : " + word + Stemmer.Stem(word));
+			//    System.out.print("Word : " + word + Stemmer.Stem(word));
 			index.get(word).setRootWord( Stemmer.Stem(word));
 		}		
+	}
+
+
+	/*
+	 * *******************************************
+	 * 				DUMP TO FILES 
+	 * *******************************************
+	 */
+	
+	public static void createPosting( File fileInfo ) {
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(fileInfo));
+
+			for (String wordString : index.keySet()) {
+				if (index.get(wordString).isBlacklisted() == true) {
+					continue;
+				}
+				Word word = index.get(wordString);
+				
+				/* Get the DocList for that word <docs, <positions>>*/
+				TreeMap<Integer, ArrayList<Integer>> docListID;
+				docListID = word.getDocumentListID();
+				
+				/* For each document print the corresponding positions */
+				for (Integer docID : docListID.keySet()){					
+					writer.write( docID + " : " + docListID.get(docID) + "\n" );
+					
+				}
+			}			
+
+		} catch (FileNotFoundException e) {
+			System.out.println("File could not be found");
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (writer != null) {
+					writer.close();
+				}
+			} catch (IOException e) {
+				System.out.println();
+			}
+		}	
+}
+		
+	
+	
+	/* Creates a file with format 
+	 * word : Appearances 
+	 * 
+	 */
+	public static void createCollectionIndex( File fileInfo ) {
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(fileInfo));
+
+			for (String wordString : index.keySet()) {
+				if (index.get(wordString).isBlacklisted() == true) {
+					continue;
+				}
+				Word word = index.get(wordString);
+				
+				for (Integer docID : word.getDocumentListID().keySet())
+				{
+					writer.write( wordString + " : " + word.getDocumentList_size() + " : " + docID + "\n" );
+				}
+			}			
+
+		} catch (FileNotFoundException e) {
+			System.out.println("File could not be found");
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (writer != null) {
+					writer.close();
+				}
+			} catch (IOException e) {
+				System.out.println();
+			}
+		}	
+}			
+	
+	
+/* In case that we want to include subfolders
+	if (fileEntry.isDirectory()) {
+		createDocumentDescription(fileEntry);
+	} else {
+*/			
+
+	/* Stores document description to file and also keeps it in a hash list */
+	public static TreeMap<String, Integer> createDocumentDescription(final File dir,
+			File docDescrFile) {
+		int seqNum = 0;
+		BufferedWriter writer = null;
+		TreeMap<String, Integer> docDescMap = new TreeMap<String, Integer>();
+		
+		try {
+			writer = new BufferedWriter(new FileWriter(docDescrFile));
+			
+			for (final File fileEntry : dir.listFiles()) {
+				/* Write to File */
+				writer.write(seqNum + " : " + fileEntry.getAbsolutePath()
+						+ " : txt\n");
+				
+				/* Write to Hash */
+				docIDmap.put(fileEntry.getAbsolutePath() , seqNum);
+				seqNum++;
+			}
+		} catch (FileNotFoundException e) {
+			System.out.println("File could not be found");
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (writer != null) {
+					writer.close();
+				}
+			} catch (IOException e) {
+				System.out.println();
+			}
+		}
+		return docDescMap;
 	}
 
 	/*
@@ -174,22 +274,34 @@ public class Scavenger {
 	
 	public static void main(String[] args) {
 
-		//System.exit(0);
-
-		/* First load the blacklist */
+		
+		/* Create the document collection */
+		final File folder = new File("./fileSources");
+		final File docDescrFile = new File("./CollectionIndex/DocumentsFile.txt");
+		createDocumentDescription( folder, docDescrFile);
+		
+		/* Load the blacklist */
 		final File blacklistDir = new File("./blacklist");
 		loadBlackListFilesOfDir(blacklistDir);
-
-		final File folder = new File("./fileSources");
-		loadWordFilesOfDir(folder);
 		
+		/* Load the vocabulary */
+		final File vocabularyFolder = new File("./fileSources");
+		loadWordFilesOfDir(vocabularyFolder);
+		
+		/* Stem it */
 		StemTheIndexBaby();
-		// File file = new File("./fileSources/file1.txt");
-		// indexFile( file );
-		printIndex();
+		
+		/* Create Collection Index */
+		final File collectionIndex = new File("./CollectionIndex/VocabularyFiles.txt");
+		createCollectionIndex( collectionIndex );
 
+		/* Create Posting */
+		final File postingFile = new File("./CollectionIndex/PostingFile.txt");
+		createPosting( postingFile );
+				
+		
+		//printIndex();
 	}
-
 }
 
 /*

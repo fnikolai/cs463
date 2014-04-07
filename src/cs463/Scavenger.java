@@ -3,15 +3,22 @@ package cs463;
 //import org.apache.commons.io.FilenameUtils;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
+import java.io.Reader;
+import java.io.UTFDataFormatException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
+import java.util.StringTokenizer;
 import java.util.TreeMap;
 
 import mitos.stemmer.Stemmer;
@@ -37,8 +44,10 @@ public class Scavenger {
 	 * *******************************************
 	 */
 
-	public static void indexWord(String wordString, int pos,  boolean isBlackList, File fileInfo) {
+	public static void indexWord(String wordString, long pos,  boolean isBlackList, File fileInfo) {
 		Word word = index.get(wordString);
+		
+		//System.out.println("PRINT : " + wordString);
 		
 		if (word == null) {
 			word = new Word();
@@ -91,28 +100,32 @@ public class Scavenger {
 	}
 
 	private static void indexFile(File fileInfo, boolean isBlackList) {
-		BufferedReader reader = null;
 
+		//"´'`’—‘°�–"
+		String delimiter = "[]\t\n\r\f\"\'!@#$%^&*()-_=+,<.>/?:';0123456789+ ";
+		StringTokenizer tokenizer = null;
+		RandomAccessFile readerRA = null;		
 		try {
-			reader = new BufferedReader(new FileReader(fileInfo));
-			String text = null;
-
-			while ((text = reader.readLine()) != null) {
-				tokenize = new Scanner(text);
-				while (tokenize.hasNext()) {
-					/* FIXME : fix the way to get the position */
-					indexWord(tokenize.next(), 32, isBlackList, fileInfo);
+			readerRA = new RandomAccessFile(fileInfo, "r" );
+			String line;
+			String UTF8word;
+			while( (UTF8word = readerRA.readUTF()) != null ) {
+				tokenizer = new StringTokenizer(UTF8word, delimiter);
+				while (tokenizer.hasMoreTokens()) {
+					indexWord( tokenizer.nextToken() , readerRA.getFilePointer() , isBlackList, fileInfo);
 				}
 			}
 		} catch (FileNotFoundException e) {
 			System.out.println("File could not be found");
 			e.printStackTrace();
+		} catch (EOFException e) {
+		} catch (UTFDataFormatException e) {			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
 			try {
-				if (reader != null) {
-					reader.close();
+				if (readerRA != null) {
+					readerRA.close();
 				}
 			} catch (IOException e) {
 				System.out.println();
@@ -122,7 +135,7 @@ public class Scavenger {
 
 	/*
 	 * *******************************************
-	 * 				STEMMING 
+	 * 				STEMMINGs 
 	 * *******************************************
 	 */
 	
@@ -158,13 +171,13 @@ public class Scavenger {
 				Word word = index.get(wordString);
 				
 				/* Get the DocList for that word <docs, <positions>>*/
-				TreeMap<Integer, ArrayList<Integer>> docListID;
+				TreeMap<Integer, ArrayList<Long>> docListID;
 				docListID = word.getDocumentListID();
 				
 				/* For each document print the corresponding positions */
 				for (Integer docID : docListID.keySet()){					
-					writer.write( docID + " : " + docListID.get(docID) + "\n" );
-					
+					//writer.write( wordString + " : " + docID + " : " + docListID.get(docID) + "\n" ); USE IT FOR DEBUG
+					writer.write( docID + " : " + docListID.get(docID) + "\n" ); 
 				}
 			}			
 
@@ -190,8 +203,10 @@ public class Scavenger {
 	 * word : Appearances 
 	 * 
 	 */
-	public static void createCollectionIndex( File fileInfo ) {
+	public static void createVocabularyIndex( File fileInfo ) {
 		BufferedWriter writer = null;
+		/* This is used to keep track of pointers into posting File */
+		Integer postPointer = 0;
 		try {
 			writer = new BufferedWriter(new FileWriter(fileInfo));
 
@@ -200,11 +215,9 @@ public class Scavenger {
 					continue;
 				}
 				Word word = index.get(wordString);
-				
-				for (Integer docID : word.getDocumentListID().keySet())
-				{
-					writer.write( wordString + " : " + word.getDocumentList_size() + " : " + docID + "\n" );
-				}
+				Integer numOfRefs = word.getDocumentListID_size();
+				writer.write( wordString + " : " + word.getDocumentListID_size() + " : " + postPointer + "\n" );
+				postPointer = postPointer + numOfRefs;
 			}			
 
 		} catch (FileNotFoundException e) {
@@ -293,7 +306,7 @@ public class Scavenger {
 		
 		/* Create Collection Index */
 		final File collectionIndex = new File("./CollectionIndex/VocabularyFiles.txt");
-		createCollectionIndex( collectionIndex );
+		createVocabularyIndex( collectionIndex );
 
 		/* Create Posting */
 		final File postingFile = new File("./CollectionIndex/PostingFile.txt");

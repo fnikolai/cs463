@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.TreeMap;
 
 public class Word {
-	int value = 1; // note that we start at 1 since we're counting
+	int freq = 1; // note that we start at 1 since we're counting
 	private boolean isBlacklisted;
 	/* Key : Filepath, Value : Array of positions of corresponding files 
 	 * Example :  {33=[2], 45=[52,61,74]} 
@@ -28,9 +28,9 @@ public class Word {
 	/* Get the identifier of the referenced document from an index
 	 * FIXME try catch ktlp ktlp
 	 */
-	public void addDocumentRefID(String docName, long pos, TreeMap<String, Integer> index){
+	public void addDocumentRefID(String docName, long pos, TreeMap<String, Integer> docIndex){
 		
-		Integer docID =  index.get(docName);
+		Integer docID =  docIndex.get(docName);
 		ArrayList<Long> posList = documentListID.get( docID );
 		
 		if (posList == null) {
@@ -74,13 +74,17 @@ public class Word {
 	}		
 	
 	public void incrAppearances() {
-		++value;
+		++freq;
 	}
 
 	public int getAppearances() {
-		return value;
+		return freq;
 	}
 
+	public void resetAppearances() {
+		freq = 0;
+	}
+	
 	public boolean isBlacklisted() {
 		return isBlacklisted;
 	}

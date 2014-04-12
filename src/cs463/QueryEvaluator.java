@@ -11,7 +11,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,10 +27,11 @@ public class QueryEvaluator {
 
 	static public  class IndexedWord
 	{
-		int numOfDocs;
-		int startFromDocID;
+		int numOfDocs;		// In how many docs it appears
+		int startFromDocID;	// Start from Pos in PostingFile
+		String tf;			// Tf as calculated before (appearances/MaxAppearancesInDocs)
 	}
-	static TreeMap<String, IndexedWord> index = new TreeMap<String, IndexedWord>();
+	static TreeMap<String, IndexedWord> vocabularyIndex = new TreeMap<String, IndexedWord>();
 
 	public static void loadVocabulary(File fileInfo) {
 		BufferedReader reader = null;
@@ -50,7 +53,7 @@ public class QueryEvaluator {
 				wordInfo.numOfDocs = Integer.parseInt( indexParts[1] );
 				wordInfo.startFromDocID = Integer.parseInt( indexParts[2] );
 
-				index.put(word, wordInfo);
+				vocabularyIndex.put(word, wordInfo);
 			}
 
 		} catch (FileNotFoundException e) {
@@ -110,15 +113,15 @@ public class QueryEvaluator {
 	}
 	
 	
-	
-	public static List<Integer> searchForDocs( File postingFile, String findMe )
+	/* Return corresponding lines from Posting for documents including the wordString */
+	public static List<String> searchForDocs( File postingFile, String wordString )
 	{
 		System.out.println(" *** START FINDING ****");
 		IndexedWord wordInfo;
-		List<Integer> docIDs = new ArrayList<Integer>();
-		System.out.println("Find word : " + findMe);
-		wordInfo = index.get(findMe);
-		System.out.println("Word : " + findMe );
+		List<String> docInfos = new ArrayList<String>();
+		System.out.println("Find word : " + wordString);
+		wordInfo = vocabularyIndex.get(wordString);
+		System.out.println("Word : " + wordString );
 		System.out.println("Appearances : " + wordInfo.numOfDocs);
 		System.out.println("Pointer : " + wordInfo.startFromDocID);
 
@@ -135,10 +138,7 @@ public class QueryEvaluator {
 			int docsRead = 0;
 			while ( docsRead < wordInfo.numOfDocs )
 			{
-				String docInfo = reader.readLine();	
-				docInfo = docInfo.replaceAll("\\s+", "");
-				String[] docInfoParts = docInfo.split(":");
-				docIDs.add( new Integer( docInfoParts[0] ));
+				docInfos.add(reader.readLine());
 				docsRead++;
 			}
 		} catch (IOException e) {
@@ -150,12 +150,48 @@ public class QueryEvaluator {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}    		
-
-
-		return docIDs;
+		return docInfos;
 	}
 
-
+	/* Input : Lines extracted from Posting regarding relevant documents */
+	public static void vectorModel( String wordString, List<String> docInfos )
+	{
+		System.out.println(" ***** RESULTS ******");
+		IndexedWord word;
+		
+		word = vocabularyIndex.get(wordString);
+		System.out.println("Num of Docs : " + word.numOfDocs);
+		System.out.println("TF : " + word.tf);
+		
+		
+		for ( String docInfo : docInfos)
+		{
+			System.out.println(docInfo);
+		}
+		
+		/* TODO : parsare ta epimerous kommati docId : tf : positions 
+		 * Kuriws se endiaferei to TF kai koita to dianusmatiko montelo edw mesa 
+		 */
+		
+		/*
+		// Add tf to the searching Word
+		DecimalFormat df = new DecimalFormat("####0.0000");
+		if ( vocabularyIndex.get(wordString) != null)
+		{
+			vocabularyIndex.get(wordString).tf = df.format( new Double( docInfoParts[1]));
+		}		
+		
+		
+		String docInfo = reader.readLine();	
+		docInfo = docInfo.replaceAll("\\s+", "");
+		String[] docInfoParts = docInfo.split(":");
+		// Add to the finded Docs
+		docIDs.add( new Integer( docInfoParts[0] ));
+		*/
+		
+	}
+	
+	
 	public static void main(String[] args) {
 
 		/* Load the vocabulary */
@@ -166,15 +202,16 @@ public class QueryEvaluator {
 		/*find manually the docIDs*/
 		final File posting = new File(
 				"./CollectionIndex/PostingFile.txt");
-		List<Integer> docIDList = searchForDocs(posting, "wight");
+		List<String> docInfos = searchForDocs(posting, "wight");
 		//searchDocIDs(posting, "wheat");
 
 		/*find manually the Paths*/
 		final File docInfo = new File(
 				"./CollectionIndex/DocumentsFile.txt");		
-		docIDtoPath(docInfo, docIDList);
+		//docIDtoPath(docInfo, docIDList);
 		//searchDocIDs(posting, "wheat");		
-		
+	
+		vectorModel("wight", docInfos);
 	}
 
 }

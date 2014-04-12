@@ -15,6 +15,8 @@ import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.UTFDataFormatException;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +25,8 @@ import java.util.Scanner;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.TreeSet;
+
+import com.sun.org.apache.xerces.internal.impl.io.UTF8Reader;
 
 import mitos.stemmer.Stemmer;
 
@@ -106,6 +110,18 @@ public class Scavenger {
 		}
 	}
 
+    // convert from internal Java String format -> UTF-8
+    public static String convertToUTF8(String s) {
+        String out = null;
+        try {
+            out = new String(s.getBytes("UTF-8"), "ISO-8859-1");
+        } catch (java.io.UnsupportedEncodingException e) {
+            return null;
+        }
+        return out;
+    }	
+	
+	
 	private static void indexFile(File fileInfo, boolean isBlackList) {
 
 		//System.out.println("Begin");
@@ -122,11 +138,8 @@ public class Scavenger {
 			readerRA = new RandomAccessFile(fileInfo, "r");
 			String line;
 			String token = null;
-			//System.out.println("Point the fucker 1");
 			// Read every line
-			while ((line = readerRA.readLine()) != null) {
-				// Convert line to UTF
-				// Get Tokens
+			while ((line = readerRA.readUTF()) != null) {
 				tokenizer = new StringTokenizer(line, delimiter);
 				while (tokenizer.hasMoreTokens()) {
 					token = tokenizer.nextToken();
@@ -364,7 +377,7 @@ public class Scavenger {
 			/* Load the vocabulary */
 			final File vocabularyFolder = new File("./fileSources");
 			loadWordFilesOfDir(vocabularyFolder);
-
+			
 			/* Stem it */
 			StemTheIndexBaby();
 

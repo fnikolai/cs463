@@ -141,6 +141,12 @@ public class QueryEvaluatorGui extends JFrame {
 		List<String> docInfos = new ArrayList<String>();
 		wordInfo = vocabularyIndex.get(wordString);
 
+		if (wordInfo == null)
+		{
+			System.out.println("Word : " + wordString + " could not be found");
+			return null;
+		}
+		
 		/*
 		 * JOptionPane.showMessageDialog(frame," *** START FINDING ****\n"
 		 * +"Find word : " + wordString +"\nWord : " + wordString

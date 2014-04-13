@@ -160,9 +160,7 @@ public class QueryEvaluator {
 		IndexedWord word;
 		
 		word = vocabularyIndex.get(wordString);
-		System.out.println("Num of Docs : " + word.numOfDocs);
-		System.out.println("TF : " + word.tf);
-		
+		System.out.println("Num of Docs : " + word.numOfDocs);		
 		
 		for ( String docInfo : docInfos)
 		{

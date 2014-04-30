@@ -10,7 +10,7 @@ public class Word {
 	 * Example :  {33=[2], 45=[52,61,74]} 
 	 * */
 	private TreeMap<String, ArrayList<Long>> documentList = new TreeMap<String, ArrayList<Long>>();
-	private TreeMap<Integer, ArrayList<Long>> documentListID = new TreeMap<Integer, ArrayList<Long>>();
+	public TreeMap<Integer, ArrayList<Long>> documentListID = new TreeMap<Integer, ArrayList<Long>>();
 	String rootWord;
 
 	public void setRootWord(String rootWord){
@@ -31,12 +31,9 @@ public class Word {
 		
 		if (posList == null) {
 			posList = new ArrayList<Long>();
-			posList.add(pos);
-			
-			documentListID.put( docID, posList );
-		} else {
-			posList.add(pos);
-		}			
+		}
+		posList.add(pos);
+		documentListID.put( docID, posList );			
 	}
 
 	/* Store the referenced docname in a string list*/

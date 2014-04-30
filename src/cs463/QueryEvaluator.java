@@ -167,26 +167,6 @@ public class QueryEvaluator {
 			System.out.println(docInfo);
 		}
 		
-		/* TODO : parsare ta epimerous kommati docId : tf : positions 
-		 * Kuriws se endiaferei to TF kai koita to dianusmatiko montelo edw mesa 
-		 */
-		
-		/*
-		// Add tf to the searching Word
-		DecimalFormat df = new DecimalFormat("####0.0000");
-		if ( vocabularyIndex.get(wordString) != null)
-		{
-			vocabularyIndex.get(wordString).tf = df.format( new Double( docInfoParts[1]));
-		}		
-		
-		
-		String docInfo = reader.readLine();	
-		docInfo = docInfo.replaceAll("\\s+", "");
-		String[] docInfoParts = docInfo.split(":");
-		// Add to the finded Docs
-		docIDs.add( new Integer( docInfoParts[0] ));
-		*/
-		
 	}
 	
 	

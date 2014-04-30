@@ -1,12 +1,15 @@
 package cs463;
 
 //import org.apache.commons.io.FilenameUtils;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.io.UTFDataFormatException;
 import java.math.BigDecimal;
@@ -44,25 +47,15 @@ public class Scavenger {
 			boolean isBlackList, File fileInfo) {
 		Word word = index.get(wordString);
 
-		// System.out.println("PRINT : " + wordString);
-
 		if (word == null) {
 			word = new Word();
-
-			word.setBlacklisted(isBlackList); // Obviously isBlackList is set
-			// from the outer world
-			if (!isBlackList)
-				word.addDocumentRefID(fileInfo.getAbsolutePath(), pos, docIDmap);
-			// word.addDocumentReference(fileInfo.getAbsolutePath(), pos );
-
-			index.put(wordString, word);
-		} else {
-			word.incrAppearances();
-
-			if (!isBlackList)
-				word.addDocumentRefID(fileInfo.getAbsolutePath(), pos, docIDmap);
-			// word.addDocumentReference(fileInfo.getAbsolutePath(), pos);
 		}
+		
+		word.setBlacklisted(isBlackList);
+		if (!isBlackList)
+			word.addDocumentRefID(fileInfo.getAbsolutePath(), pos, docIDmap);
+		
+		index.put(wordString, word);		
 	}
 
 	public static void printIndex() {
@@ -112,33 +105,36 @@ public class Scavenger {
 	
 	private static void indexFile(File fileInfo, boolean isBlackList) {
 
-		//System.out.println("Begin");
-
-		String delimiter = "[]\t\n\r\f\"\'!@#$%^&*()-_=+,<.>/?:';0123456789+ ";
+		String delimiter = "[]\t\n\r\f\"\'!@#$%^&*()-_=+,<.>/?:';0123456789+’—� ";
 		StringTokenizer tokenizer = null;
-		RandomAccessFile readerRA = null;
-
+		//RandomAccessFile readerRA = null;
+		BufferedReader reader = null;
+		
 		HashMap<String, Integer> docFreqMap = new HashMap<String, Integer>();
 		Integer freq = null;
 
 		try {
 			// Open descriptor
-			readerRA = new RandomAccessFile(fileInfo, "r");
+			//readerRA = new RandomAccessFile(fileInfo, "r");
+			reader = new BufferedReader(new InputStreamReader(
+					new FileInputStream(fileInfo), "UTF8"));
 			String line;
 			String token = null;
 			// Read every line
-			while ((line = readerRA.readUTF()) != null) {
+			int wordCounter = 0;
+			while ((line = reader.readLine()) != null) {
 				tokenizer = new StringTokenizer(line, delimiter);
 				while (tokenizer.hasMoreTokens()) {
+					wordCounter++;
 					token = tokenizer.nextToken();
 					/* Handle the frequencies */
 					freq = docFreqMap.get(token);
 					if (freq == null) {
 						freq = 0;
 					}
+
 					docFreqMap.put(token, ++freq);
-					// System.out.println("Push " + token + " : " + freq);
-					indexWord(token, readerRA.getFilePointer(), isBlackList,
+					indexWord(token, wordCounter, isBlackList,
 							fileInfo);
 					token = null;
 				}
@@ -158,8 +154,8 @@ public class Scavenger {
 				System.out.println("DEBUG : " + fileInfo.getAbsolutePath() + " : "
 					+ docFreqMap.size() + "\n\n");
 			try {
-				if (readerRA != null) {
-					readerRA.close();
+				if (reader != null) {
+					reader.close();
 					// return;
 				}
 			} catch (IOException e) {
@@ -194,22 +190,6 @@ public class Scavenger {
 		} catch (Exception e) {
 		}
 
-	}
-
-	/*
-	 * *******************************************
-	 * STEMMINGs *******************************************
-	 */
-
-	public static void StemTheIndexBaby() {
-		Stemmer.Initialize();
-
-		for (String word : index.keySet()) {
-			if (index.get(word).isBlacklisted() == true) {
-				continue;
-			}
-			index.get(word).setRootWord(Stemmer.Stem(word));
-		}
 	}
 
 	/*
@@ -367,7 +347,7 @@ public class Scavenger {
 			loadWordFilesOfDir(vocabularyFolder);
 			
 			/* Stem it */
-			StemTheIndexBaby();
+			//StemTheIndexBaby();
 
 			/* Create Collection Index */
 			final File collectionIndex = new File(
@@ -381,14 +361,3 @@ public class Scavenger {
 			// printIndex();
 		}
 	}
-
-	/*
-	 * class BlackList extends Scavenger {
-	 * 
-	 * }
-	 * 
-	 * 
-	 * class WordList extends Scavenger {
-	 * 
-	 * }
-	 */

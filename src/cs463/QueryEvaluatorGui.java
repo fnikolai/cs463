@@ -126,24 +126,26 @@ public class QueryEvaluatorGui extends JFrame {
 	 * Returns something like <(word1, <doc1,doc2,doc3>>), (word2,
 	 * <doc2,doc4,doc5>>)
 	 */
-	public static TreeMap<String, List<String>> searchForDocs(File postingFile, TreeMap<String, Double> termMap) {
+	public static TreeMap<String, List<String>> searchForDocs(File postingFile,
+			TreeMap<String, Double> termMap) {
 
 		TreeMap<String, List<String>> relevantDocs = new TreeMap<String, List<String>>();
 		Iterator<String> termMap_it = termMap.keySet().iterator();
-		
-		/* Because java sucks we use the iterator so that we can delete words that do not exist from the term map */
-		while( termMap_it.hasNext() ){
+
+		/*
+		 * Because java sucks we use the iterator so that we can delete words
+		 * that do not exist from the term map
+		 */
+		while (termMap_it.hasNext()) {
 			String keyword = termMap_it.next();
-			System.out.println("" + keyword );
+			System.out.println("" + keyword);
 			List<String> relDocsInfo;
 			relDocsInfo = searchForDocs(postingFile, keyword);
 
 			if (relDocsInfo != null) {
-				//termMap_it.remove();
+				// termMap_it.remove();
 				relevantDocs.put(keyword, relDocsInfo);
-			} 
-			//else {
-			//}
+			}
 		}
 
 		return relevantDocs;
@@ -160,7 +162,8 @@ public class QueryEvaluatorGui extends JFrame {
 		wordInfo = vocabularyIndex.get(wordString);
 
 		if (wordInfo == null) {
-			//System.out.println("Word : " + wordString + " could not be found");
+			// System.out.println("Word : " + wordString +
+			// " could not be found");
 			System.out.println("\t--> Not found");
 			return null;
 		}
@@ -174,12 +177,12 @@ public class QueryEvaluatorGui extends JFrame {
 				reader.readLine();
 				skipLines++;
 			}
-			//System.out.println("Start from line : " + skipLines);
+			// System.out.println("Start from line : " + skipLines);
 			System.out.println("\t# Docs : " + wordInfo.numOfDocs);
 			int docsRead = 0;
 			while (docsRead < wordInfo.numOfDocs) {
 				String line = reader.readLine();
-				//System.out.println("-->  " + line);
+				// System.out.println("-->  " + line);
 				docInfos.add(line);
 				docsRead++;
 			}
@@ -224,7 +227,7 @@ public class QueryEvaluatorGui extends JFrame {
 				 * Calculate the weight for the word in each document and save
 				 * it
 				 */
-				
+
 				List<String> relevantDocuments = keywordDocList.get(word);
 				for (String docInfo : relevantDocuments) {
 					docInfo = docInfo.replaceAll("\\s+", "");
@@ -233,8 +236,9 @@ public class QueryEvaluatorGui extends JFrame {
 					Integer docID;
 					docID = new Integer(docInfoParts[0]);
 					tf = new Double(docInfoParts[1]);
-					/* Ton xristo sou kai thn panagia sou .....
-					 * Java needs casting other division return only the major number 
+					/*
+					 * Ton xristo sou kai thn panagia sou ..... Java needs
+					 * casting other division return only the major number
 					 */
 					double wordIDF = log2(TOTAL_NUMBER_OF_DOCUMENTS
 							/ (double) relevantDocuments.size());
@@ -245,16 +249,17 @@ public class QueryEvaluatorGui extends JFrame {
 
 					/* Push it to the proper position */
 					TreeMap<String, Double> entry = new TreeMap<String, Double>();
-					
+
 					entry.put(word, weight);
-					relDocsWeight.put(docID, entry);									
+					relDocsWeight.put(docID, entry);
 				}
 			}
 		}
 		return relDocsWeight;
 	}
 
-	public static Vector<Double> treeToVector( TreeMap<String, Double> docWeightVector, Integer docID) {
+	public static Vector<Double> treeToVector(
+			TreeMap<String, Double> docWeightVector, Integer docID) {
 		Vector<Double> vector = new Vector<Double>();
 		Double w;
 		for (String s : vocabularyIndex.keySet()) {
@@ -264,24 +269,25 @@ public class QueryEvaluatorGui extends JFrame {
 				vector.add((double) 0.0);
 			else
 				vector.add(w);
-			
+
 		}
 		return vector;
 	}
-	
-	public static Vector<Double> treeToVector( TreeMap<String, Double> docWeightVector) {
+
+	public static Vector<Double> treeToVector(
+			TreeMap<String, Double> docWeightVector) {
 		Vector<Double> vector = new Vector<Double>();
 		Double w;
-		
+
 		for (String s : vocabularyIndex.keySet()) {
-		
+
 			w = docWeightVector.get(s);
 
 			if (w == null || w == 0.0)
 				vector.add((double) 0.0);
 			else
-				vector.add(w);			
-		}		
+				vector.add(w);
+		}
 		return vector;
 	}
 
@@ -292,12 +298,10 @@ public class QueryEvaluatorGui extends JFrame {
 		double magnitude2 = 0.0;
 		double cosineSimilarity = 0.0;
 
-		
-		if ( docVector1.size() != docVector2.size())
-		{
+		if (docVector1.size() != docVector2.size()) {
 			System.out.println("Vector have different sizes ... wtf ?");
 		}
-		
+
 		for (int i = 0; i < docVector2.size(); i++) // docVector1 and docVector2
 													// must be of same length
 		{
@@ -310,7 +314,7 @@ public class QueryEvaluatorGui extends JFrame {
 		magnitude2 = Math.sqrt(magnitude2);// sqrt(b^2)
 
 		if (magnitude1 == 0.0 || magnitude2 == 0.0) {
-			return (double) 0.0;			
+			return (double) 0.0;
 		} else {
 			cosineSimilarity = (dotProduct / (magnitude1 * magnitude2));
 		}
@@ -394,7 +398,7 @@ public class QueryEvaluatorGui extends JFrame {
 		for (String s : vocabularyIndex.keySet()) {
 			/* Check if value exists on the tree */
 			if (wordWeightTree.get(s) == null)
-				wordWeightTree.put(s,  0.0);
+				wordWeightTree.put(s, 0.0);
 		}
 		return wordWeightTree;
 	}
@@ -415,8 +419,8 @@ public class QueryEvaluatorGui extends JFrame {
 		}
 	}
 
-	
-	public static TreeMap<String, Double> StemTheVectorBaby(TreeMap<String, Double> weightenWordMap) {
+	public static TreeMap<String, Double> StemTheVectorBaby(
+			TreeMap<String, Double> weightenWordMap) {
 		Stemmer.Initialize();
 		TreeMap<String, Double> weightenStemMap = new TreeMap<String, Double>();
 
@@ -427,15 +431,15 @@ public class QueryEvaluatorGui extends JFrame {
 		return weightenStemMap;
 	}
 
-	/* 
-	 * arg1 : weightened query vector 
-	 * arg2 : Map with docID as key, and each docID is associated with a second map for 
-	 * words inside the document with appropriate weight
+	/*
+	 * arg1 : weightened query vector arg2 : Map with docID as key, and each
+	 * docID is associated with a second map for words inside the document with
+	 * appropriate weight
 	 */
 	public static TreeMap<Integer, Double> compareQueryToDocs(
 			TreeMap<String, Double> queryWeight,
 			TreeMap<Integer, TreeMap<String, Double>> docWeightList) {
-		
+
 		TreeMap<Integer, Double> similarDocs = new TreeMap<Integer, Double>();
 
 		for (Integer docID : docWeightList.keySet()) {
@@ -444,17 +448,9 @@ public class QueryEvaluatorGui extends JFrame {
 			Vector<Double> queryVector;
 
 			queryVector = treeToVector(queryWeight);
-//			System.out.println("Test : " + docWeightList.get(docID).get("work"));
-//			System.out.println("Test2 : " + docWeightList.get(docID).get("work2"));
-
 			docVector = treeToVector(docWeightList.get(docID), docID);
-			Double similarity = cosineSimilarity(docVector, queryVector );
-			/*
-			if ( similarity == 0.0 )
-			{
-				System.out.println("What the fuck ?1 : " + similarity);
-				System.out.println(docWeightList.get(docID));
-			}*/
+			Double similarity = cosineSimilarity(docVector, queryVector);
+
 			similarDocs.put(docID, similarity);
 		}
 		return similarDocs;
@@ -513,34 +509,38 @@ public class QueryEvaluatorGui extends JFrame {
 		System.out.println("*************************************");
 	}
 
-	public static TreeMap<String, Double> findRelatedTerms(TreeMap<String, Double> termMap) {
+	public static TreeMap<String, Double> findRelatedTerms(
+			TreeMap<String, Double> termMap) {
 		TreeMap<String, Double> relatedTerms = null;
 		try {
-			/* We create a new tree map, because if we modify the current (termMap) due to 
-			 * multiple threads ConcurrentModificationException is thrown and I 'm to lazy to 
-			 * take care of it. cheers
+			/*
+			 * We create a new tree map, because if we modify the current
+			 * (termMap) due to multiple threads ConcurrentModificationException
+			 * is thrown and I 'm to lazy to take care of it. cheers
 			 */
-			relatedTerms = new TreeMap<String, Double>(); 
-			
+			relatedTerms = new TreeMap<String, Double>();
+
 			UniversalWordNet uwn = new UniversalWordNet();
 
-			/* Enhance previous map with related words weighten as dependant variables */
-			for( String term : termMap.keySet()) {
-				relatedTerms.put( term , termMap.get(term));
-				TreeMap<String, Float>  relatedWords;
-				
-				// Fetch the list 
+			/*
+			 * Enhance previous map with related words weighten as dependant
+			 * variables
+			 */
+			for (String term : termMap.keySet()) {
+				relatedTerms.put(term, termMap.get(term));
+				TreeMap<String, Float> relatedWords;
+
+				// Fetch the list
 				relatedWords = uwn.findRelatedTerms(term);
 
-				for( String word : relatedWords.keySet())
-				{
+				for (String word : relatedWords.keySet()) {
 					Double dependantWeight;
-					dependantWeight = termMap.get(term) * relatedWords.get(word);
+					dependantWeight = termMap.get(term)
+							* relatedWords.get(word);
 					relatedTerms.put(word, dependantWeight);
 				}
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return relatedTerms;
@@ -578,8 +578,6 @@ public class QueryEvaluatorGui extends JFrame {
 
 		/* find manually the docIDs */
 		final File posting = new File("./CollectionIndex/PostingFile.txt");
-		// List<String> docInfos = searchForDocs(posting, word);
-		// searchDocIDs(posting, "wheat");
 
 		/* find manually the Paths */
 		final File docInfo = new File("./CollectionIndex/DocumentsFile.txt");
@@ -590,22 +588,30 @@ public class QueryEvaluatorGui extends JFrame {
 		TreeMap<String, Double> weightenQuery;
 		weightenQuery = parseWordWeight(searchForWord.split(" "));
 
-		/* Stemmed words - Same map could be used by I leave the garbage collector to its magic */
+		/*
+		 * Stemmed words - Same map could be used by I leave the garbage
+		 * collector to its magic
+		 */
 		TreeMap<String, Double> weightenStemQuery;
-		weightenStemQuery = StemTheVectorBaby( weightenQuery );
-		
-		/* Again ... I could use the previous Map but NO. I insist ... garbage collector must do something.
-		 * Once again ... java sucks .... cannot cast float to double ? 
-		 * Here the map includes stemmed words and relative words */
+		weightenStemQuery = StemTheVectorBaby(weightenQuery);
+
+		/*
+		 * Again ... I could use the previous Map but NO. I insist ... garbage
+		 * collector must do something. Once again ... java sucks .... cannot
+		 * cast float to double ? Here the map includes stemmed words and
+		 * relative words
+		 */
 		TreeMap<String, Double> weightenExtendedQuery;
-		weightenExtendedQuery = findRelatedTerms( weightenStemQuery);
-		
+		weightenExtendedQuery = findRelatedTerms(weightenStemQuery);
+
 		System.out.println(" ===== Extended Map ======");
-		System.out.println( weightenExtendedQuery );
+		System.out.println(weightenExtendedQuery);
 		// recalculate the weights for each word
-		
-		
-		/* Do some black magic and find the relevant documents for each word (stemmed and relative) */
+
+		/*
+		 * Do some black magic and find the relevant documents for each word
+		 * (stemmed and relative)
+		 */
 		TreeMap<String, List<String>> relevantDocuments;
 		relevantDocuments = searchForDocs(posting, weightenExtendedQuery);
 
@@ -616,11 +622,10 @@ public class QueryEvaluatorGui extends JFrame {
 		/* Return the previous tree map with 0 if word does not exist */
 		System.out.println(weightenExtendedQuery);
 		weightenExtendedQuery = buildWeightenQueryMap(weightenExtendedQuery);
-		
+
 		TreeMap<Integer, Double> similarDocs = compareQueryToDocs(
 				weightenExtendedQuery, docVectors);
 
-		//System.out.println(similarDocs);
 		printSimilarDocs(similarDocs);
 	}
 
